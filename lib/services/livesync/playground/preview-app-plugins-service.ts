@@ -36,6 +36,19 @@ export class PreviewAppPluginsService implements IPreviewAppPluginsService {
 		});
 	}
 
+	public getExternalPlugins(device: Device): any[] {
+		const devicePlugins = this.getDevicePlugins(device);
+		const result = _.keys(devicePlugins)
+			.filter(plugin => plugin.indexOf("nativescript") !== -1)
+			.filter(plugin => !_.includes(["nativescript-angular", "nativescript-vue", "nativescript-intl"], plugin));
+
+		// HACK: We need this in order to work around the following code https://github.com/NativeScript/template-hello-world/blob/master/app/app.js#L7
+		// If we need to remove this, the code above should be changed to: "var application = require("tns-core-modules/application")"
+		result.push(...[ "application"]);
+
+		return result;
+	}
+
 	private getDevicePlugins(device: Device): IStringDictionary {
 		try {
 			return JSON.parse(device.plugins);
