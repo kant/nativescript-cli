@@ -1,6 +1,6 @@
 import { Yok } from "../../../lib/common/yok";
 import { LoggerStub } from "../../stubs";
-import { FilePayload, Device } from "nativescript-preview-sdk";
+import { FilePayload, Device, FilesPayload } from "nativescript-preview-sdk";
 import { EventEmitter } from "events";
 import { PreviewAppLiveSyncService } from "../../../lib/services/livesync/playground/preview-app-livesync-service";
 import * as chai from "chai";
@@ -58,7 +58,7 @@ const syncFilesMockData = {
 		release: false,
 		bundle: false
 	},
-	env: { }
+	env: {}
 };
 
 class PreviewSdkServiceMock extends EventEmitter implements IPreviewSdkService {
@@ -69,8 +69,8 @@ class PreviewSdkServiceMock extends EventEmitter implements IPreviewSdkService {
 	public connectedDevices: Device[] = [deviceMockData];
 	public initialize() { /* empty block */ }
 
-	public async applyChanges(files: FilePayload[]) {
-		applyChangesParams.push(...files);
+	public async applyChanges(files: FilesPayload) {
+		applyChangesParams.push(...files.files);
 	}
 
 	public stop() {  /* empty block */ }
@@ -140,7 +140,7 @@ function createTestInjector(options?: {
 	return injector;
 }
 
-function arrange(options?: { projectFiles ?: string[] }) {
+function arrange(options?: { projectFiles?: string[] }) {
 	options = options || {};
 
 	const injector = createTestInjector({ projectFiles: options.projectFiles });
@@ -158,14 +158,14 @@ async function initialSync(input?: IActInput) {
 
 	const { previewAppLiveSyncService, previewSdkService, actOptions } = input;
 
-	await previewAppLiveSyncService.initialSync(syncFilesMockData);
+	await previewAppLiveSyncService.initialize(syncFilesMockData);
 	if (actOptions.emitDeviceConnected) {
 		previewSdkService.emit("onDeviceConnected", deviceMockData);
 	}
 }
 
 async function syncFiles(input?: IActInput) {
-	input = input || { };
+	input = input || {};
 
 	const { previewAppLiveSyncService, previewSdkService, projectFiles, actOptions } = input;
 
@@ -204,10 +204,10 @@ function mapFiles(files: string[]): FilePayload[] {
 
 	return files.map(file => {
 		return {
-			event: "change",
-			file: path.relative(path.join(platformsDirPath, "app"), path.join(platformsDirPath, "app", file)),
-			fileContents: undefined,
-			binary: false
+				event: "change",
+				file: path.relative(path.join(platformsDirPath, "app"), path.join(platformsDirPath, "app", file)),
+				fileContents: undefined,
+				binary: false
 		};
 	});
 }
@@ -327,7 +327,7 @@ describe("previewAppLiveSyncService", () => {
 			{
 				name: "should show warning and not transfer native files when",
 				testCases: nativeFilesTestCases.map(testCase => {
-					testCase.assertOptions = { checkWarnings:  true };
+					testCase.assertOptions = { checkWarnings: true };
 					return testCase;
 				})
 			},

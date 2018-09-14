@@ -1,6 +1,6 @@
-import { FilePayload, MessagingService, Config, Device, DeviceConnectedMessage, SdkCallbacks, ConnectedDevices } from "nativescript-preview-sdk";
+import { MessagingService, Config, Device, DeviceConnectedMessage, SdkCallbacks, ConnectedDevices, FilesPayload } from "nativescript-preview-sdk";
 import { EventEmitter } from "events";
-import { PreviewSdkEventNames, PubnubKeys } from "./preview-app-constants";
+import { PubnubKeys } from "./preview-app-constants";
 const pako = require("pako");
 
 export class PreviewSdkService extends EventEmitter implements IPreviewSdkService {
@@ -16,18 +16,19 @@ export class PreviewSdkService extends EventEmitter implements IPreviewSdkServic
 	}
 
 	public get qrCodeUrl(): string {
-		return `nsplay://boot?instanceId=${this.instanceId}&pKey=${PubnubKeys.PUBLISH_KEY}&sKey=${PubnubKeys.SUBSCRIBE_KEY}&template=play-ng`;
+		// TODO: based on hmr
+		return `nsplay://boot?instanceId=${this.instanceId}&pKey=${PubnubKeys.PUBLISH_KEY}&sKey=${PubnubKeys.SUBSCRIBE_KEY}&template=play-ng&hmr=1`;
 	}
 
-	public initialize(): void {
-		const initConfig = this.getInitConfig();
+	public initialize(getInitialFiles: (device: Device) => Promise<FilesPayload>): void {
+		const initConfig = this.getInitConfig(getInitialFiles);
 		this.messagingService = new MessagingService();
 		this.instanceId = this.messagingService.initialize(initConfig);
 	}
 
-	public applyChanges(files: FilePayload[], platform: string): Promise<void> {
+	public applyChanges(filesPayload: FilesPayload): Promise<void> {
 		return new Promise((resolve, reject) => {
-			this.messagingService.applyChanges(this.instanceId, { files, platform }, err => {
+			this.messagingService.applyChanges(this.instanceId, filesPayload, err => {
 				if (err) {
 					reject(err);
 				} else {
@@ -41,16 +42,12 @@ export class PreviewSdkService extends EventEmitter implements IPreviewSdkServic
 		this.messagingService.stop();
 	}
 
-	private getInitConfig(): Config {
+	private getInitConfig(getInitialFiles: (device: Device) => Promise<FilesPayload>): Config {
 		return {
 			pubnubPublishKey: PubnubKeys.PUBLISH_KEY,
 			pubnubSubscribeKey: PubnubKeys.SUBSCRIBE_KEY,
 			callbacks: this.getCallbacks(),
-			getInitialFiles: async () => {
-				return {
-					files: []
-				};
-			}
+			getInitialFiles
 		};
 	}
 
@@ -71,7 +68,6 @@ export class PreviewSdkService extends EventEmitter implements IPreviewSdkServic
 			},
 			onDeviceConnectedMessage: (deviceConnectedMessage: DeviceConnectedMessage) => ({ }),
 			onDeviceConnected: (device: Device) => {
-				this.emit(PreviewSdkEventNames.DEVICE_CONNECTED, device);
 				if (!_.includes(this.connectedDevices, device)) {
 					this.connectedDevices.push(device);
 				}

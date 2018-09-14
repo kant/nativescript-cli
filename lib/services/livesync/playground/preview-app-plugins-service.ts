@@ -36,6 +36,10 @@ export class PreviewAppPluginsService implements IPreviewAppPluginsService {
 		});
 	}
 
+	// exclude angular and vue related dependencies as they do not contain
+	// any native code. In this way, we will read them from the bundle
+	// and avoid decreasing the app startup time by reading a lot of
+	// files from the file system instead of the bundle.
 	public getExternalPlugins(device: Device): any[] {
 		const devicePlugins = this.getDevicePlugins(device);
 		const result = _.keys(devicePlugins)
