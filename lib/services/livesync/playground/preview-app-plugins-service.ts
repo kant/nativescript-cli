@@ -35,16 +35,16 @@ export class PreviewAppPluginsService implements IPreviewAppPluginsService {
 			}
 		});
 	}
-
-	// exclude angular and vue related dependencies as they do not contain
-	// any native code. In this way, we will read them from the bundle
-	// and avoid decreasing the app startup time by reading a lot of
-	// files from the file system instead of the bundle.
 	public getExternalPlugins(device: Device): any[] {
 		const devicePlugins = this.getDevicePlugins(device);
 		const result = _.keys(devicePlugins)
 			.filter(plugin => plugin.indexOf("nativescript") !== -1)
-			.filter(plugin => !_.includes(["nativescript-angular", "nativescript-vue", "nativescript-intl"], plugin));
+			// exclude angular and vue related dependencies as they do not contain
+			// any native code. In this way, we will read them from the bundle
+			// and improve the app startup time by not reading a lot of
+			// files from the file system instead. Also, the core theme links
+			// are custom and should be handled by us build time.
+			.filter(plugin => !_.includes(["nativescript-angular", "nativescript-vue", "nativescript-intl", "nativescript-theme-core"], plugin));
 
 		result.push(...["tns-core-modules", "tns-core-modules-widgets"]);
 

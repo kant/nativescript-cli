@@ -9,6 +9,7 @@ export class PreviewAppLiveSyncService implements IPreviewAppLiveSyncService {
 	private excludedFiles = [".DS_Store"];
 
 	constructor(private $fs: IFileSystem,
+		private $errors: IErrors,
 		private $hooksService: IHooksService,
 		private $logger: ILogger,
 		private $platformService: IPlatformService,
@@ -21,8 +22,11 @@ export class PreviewAppLiveSyncService implements IPreviewAppLiveSyncService {
 
 	public initialize(data: IPreviewAppLiveSyncData) {
 		this.$previewSdkService.initialize(async (device: Device) => {
-			console.log("WEWQEWQEQWEQWEQW");
-			this.$logger.trace("Found connected device", device);
+			if (!device) {
+				this.$errors.failWithoutHelp("Sending initial preview files without a specified device is not supported.");
+			}
+
+			this.$logger.trace("Sending initial files to device", device);
 			const filesToSyncMap: IDictionary<string[]> = {};
 			let promise = Promise.resolve<FilesPayload>(null);
 			const startSyncFilesTimeout = async (platform: string) => {
