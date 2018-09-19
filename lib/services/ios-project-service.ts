@@ -778,7 +778,7 @@ We will now place an empty obsolete compatability white screen LauncScreen.xib f
 		this.$fs.deleteDirectory(this.getAppResourcesDestinationDirectoryPath(projectData));
 	}
 
-	public async processConfigurationFilesFromAppResources(release: boolean, projectData: IProjectData): Promise<void> {
+public async processConfigurationFilesFromAppResources(release: boolean, projectData: IProjectData): Promise<void> {
 		await this.mergeInfoPlists({ release }, projectData);
 		await this.$iOSEntitlementsService.merge(projectData);
 		await this.mergeProjectXcconfigFiles(release, projectData);
@@ -1299,6 +1299,13 @@ We will now place an empty obsolete compatability white screen LauncScreen.xib f
 		const appResourcesXcconfigPath = path.join(projectData.appResourcesDirectoryPath, this.getPlatformData(projectData).normalizedPlatformName, BUILD_XCCONFIG_FILE_NAME);
 		if (this.$fs.exists(appResourcesXcconfigPath)) {
 			await this.mergeXcconfigFiles(appResourcesXcconfigPath, pluginsXcconfigFilePath);
+		}
+
+		if (!this.$fs.exists(pluginsXcconfigFilePath)) {
+			// We need the pluginsXcconfig file to exist in platforms dir as it is required in the native template:
+			// https://github.com/NativeScript/ios-runtime/blob/9c2b7b5f70b9bee8452b7a24aa6b646214c7d2be/build/project-template/__PROJECT_NAME__/build-debug.xcconfig#L3
+			// From Xcode 10 in case the file is missing, this include fails and the build itself fails (was a warning in previous Xcode versions).
+			this.$fs.writeFile(pluginsXcconfigFilePath, "");
 		}
 
 		// Set Entitlements Property to point to default file if not set explicitly by the user.
